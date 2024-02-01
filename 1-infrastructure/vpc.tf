@@ -75,3 +75,27 @@ resource "aws_subnet" "subnet" {
     Type = var.subnets[count.index].type
   }
 }
+
+resource "aws_route_table" "public-route-table" {
+  vpc_id = aws_vpc.production-vpc.id
+
+  tags = {
+    Name = "public-route-table"
+  }
+}
+
+resource "aws_route_table" "private-route-table" {
+  vpc_id = aws_vpc.production-vpc.id
+
+  tags = {
+    Name = "Private-Route-Table"
+  }
+}
+
+resource "aws_route_table_association" "association" {
+  count          = length(var.subnets)
+  route_table_id = var.subnets[count.index].type == "public" ? aws_route_table.public-route-table.id : aws_route_table.private-route-table.id
+  subnet_id      = aws_subnet.subnet[count.index].id
+
+  depends_on = [aws_subnet.subnet]
+}
