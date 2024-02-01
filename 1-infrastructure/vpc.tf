@@ -99,3 +99,47 @@ resource "aws_route_table_association" "association" {
 
   depends_on = [aws_subnet.subnet]
 }
+
+resource "aw_eip" "elastic-ip-for-nat-gateway" {
+  vpc                       = true
+  associate_with_private_ip = "10.0.0.5"
+
+  tags = {
+    Name = "production-eip"
+  }
+}
+
+resource "aws_nat-gateway" "nat-gateway" {
+  allocation_id = aws_eip.elastic-ip-for-nat-gateway.id
+  subnet_id     = aws_subnet.subnet[0].id
+
+  tags = {
+    Name = "production-nat-gateway"
+  }
+
+  depends_on = [aws_eip.elastic-ip-for-nat-gateway]
+}
+
+resource "aws_route" "route-to-nat-gateway" {
+  route_table_id         = aws_route_table.private-route-table.id
+  nat_gateway_id         = aws_nat_gateway.nat-gateway.id
+  destination_cidr_block = "0.0.0.0/0"
+
+  depends_on = [aws_nat_gateway.nat-gateway]
+}
+
+resource "aws_internet_gateway" "production-igw" {
+  vpc_id = aws_vpc.production-vpc.id
+
+  tags = {
+    Name = "production-igw"
+  }
+}
+
+resource "aws_route" "public-internet-gw-route" {
+  route_table_id         = aws_route_table.public-route-table.id
+  gateway_id             = aws_internet_gateway.production-igw.id
+  destination_cidr_block = "0.0.0.0/0"
+
+  depends_on = [aws_internet_gateway.production-igw]
+}
