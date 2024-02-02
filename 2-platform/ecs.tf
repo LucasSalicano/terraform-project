@@ -30,3 +30,7 @@ resource "aws_alb" "ecs_cluster_alb" {
     Name = "${var.ecs_cluster_name}-alb"
   }
 }
+
+resource "" "name" {
+  
+}

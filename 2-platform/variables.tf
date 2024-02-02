@@ -15,3 +15,7 @@ variable "ecs_cluster_name" {
 }
 
 variable "internet_cidr_block" {}
+
+variable "domain_name" {
+  default = "example.com"
+}
