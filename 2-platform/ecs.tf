@@ -31,6 +31,35 @@ resource "aws_alb" "ecs_cluster_alb" {
   }
 }
 
-resource "" "name" {
-  
+resource "aws_alb_target_group" "ecs_default_target_group" {
+  name     = "${var.ecs_cluster_name}-default-tg"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = data.terraform_remote_state.infrastructure.vpc_id
+
+  health_check {
+    path                = "/"
+    protocol            = "HTTP"
+    matcher             = "200"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 5
+    unhealthy_threshold = 2
+  }
+
+  tags = {
+    Name = "${var.ecs_cluster_name}-default-tg"
+  }
+}
+
+resource "aws_route53_record" "ecs_load_balancer_record" {
+  name    = "*.${var.domain_name}"
+  type    = "A"
+  zone_id = data.aws_route53_zone.ecs_domain.zone_id
+
+  alias {
+    name                   = aws_alb.ecs_cluster_alb.dns_name
+    zone_id                = aws_alb.ecs_cluster_alb.zone_id
+    evaluate_target_health = true
+  }
 }
