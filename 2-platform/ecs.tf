@@ -66,15 +66,56 @@ resource "aws_alb_target_group" "ecs_default_target_group" {
     Name = "${var.ecs_cluster_name}-default-tg"
   }
 }
-
 resource "aws_route53_record" "ecs_load_balancer_record" {
   name    = "*.${var.domain_name}"
   type    = "A"
   zone_id = data.aws_route53_zone.ecs_domain.zone_id
 
   alias {
-    name                   = aws_alb.ecs_cluster_alb.dns_name
-    zone_id                = aws_alb.ecs_cluster_alb.zone_id
+    name                   = aws_lb.ecs_cluster_alb.dns_name
+    zone_id                = aws_lb.ecs_cluster_alb.zone_id
     evaluate_target_health = true
   }
+}
+
+resource "aws_iam_role" "ecs_cluster_role" {
+  name = "${var.ecs_cluster_name}-iam-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = ["ecs.amazonaws.com", "ec2.amazonaws.com", "application-autoscaling.amazonaws.com"]
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "ecs_cluster_policy" {
+  name = "${var.ecs_cluster_name}-iam-policy"
+  role = aws_iam_role.ecs_cluster_role.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ecs.*",
+          "ec2.*",
+          "elasticloadbalancing.*",
+          "application-autoscaling.*",
+          "ecr.*",
+          "cloudwatch.*",
+          "dynamodb.*",
+          "s3.*",
+          "sns.*",
+          "sqs.*",
+        ],
+        Resource = "*"
+      }
+    ]
+  })
 }
